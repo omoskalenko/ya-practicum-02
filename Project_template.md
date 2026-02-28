@@ -9,41 +9,55 @@
 ## Задание 2
 
 ### 1. Proxy
-Команда КиноБездны уже выделила сервис метаданных о фильмах movies и вам необходимо реализовать бесшовный переход с применением паттерна Strangler Fig в части реализации прокси-сервиса (API Gateway), с помощью которого можно будет постепенно переключать траффик, используя фиче-флаг.
-
-
-Реализуйте сервис на любом языке программирования в ./src/microservices/proxy.
-Конфигурация для запуска сервиса через docker-compose уже добавлена
-```yaml
-  proxy-service:
-    build:
-      context: ./src/microservices/proxy
-      dockerfile: Dockerfile
-    container_name: cinemaabyss-proxy-service
-    depends_on:
-      - monolith
-      - movies-service
-      - events-service
-    ports:
-      - "8000:8000"
-    environment:
-      PORT: 8000
-      MONOLITH_URL: http://monolith:8080
-      #монолит
-      MOVIES_SERVICE_URL: http://movies-service:8081 #сервис movies
-      EVENTS_SERVICE_URL: http://events-service:8082 
-      GRADUAL_MIGRATION: "true" # вкл/выкл простого фиче-флага
-      MOVIES_MIGRATION_PERCENT: "50" # процент миграции
-    networks:
-      - cinemaabyss-network
+Реализован прокси
+Протестирован постепенный переход 
+MOVIES_MIGRATION_PERCENT=50%
+```bash
+➜  ya-practicum-02 docker attach cinemaabyss-proxy-service
+2026/02/28 12:52:06 [monolith] GET /health -> http://monolith:8080
+2026/02/28 12:52:06 [movies-service] GET /api/movies -> http://movies-service:8081
+2026/02/28 12:52:06 [monolith] GET /api/movies -> http://monolith:8080
+2026/02/28 12:52:07 [movies-service] GET /api/movies -> http://movies-service:8081
+2026/02/28 12:52:07 [monolith] GET /api/movies -> http://monolith:8080
+2026/02/28 12:52:08 [monolith] GET /api/movies -> http://monolith:8080
+2026/02/28 12:52:09 [monolith] GET /api/movies -> http://monolith:8080
+2026/02/28 12:52:09 [movies-service] GET /api/movies -> http://movies-service:8081
+2026/02/28 12:52:10 [movies-service] GET /api/movies -> http://movies-service:8081
+2026/02/28 12:52:10 [movies-service] GET /api/movies -> http://movies-service:8081
+2026/02/28 12:52:11 [movies-service] GET /api/movies -> http://movies-service:8081
+2026/02/28 12:52:11 [monolith] GET /api/users -> http://monolith:8080
+2026/02/28 12:52:11 [monolith] GET /api/payments -> http://monolith:8080
 ```
 
-- После реализации запустите postman тесты - они все должны быть зеленые.
-- Отправьте запросы к API Gateway:
-   ```bash
-   curl http://localhost:8000/api/movies
-   ```
-- Протестируйте постепенный переход, изменив переменную окружения MOVIES_MIGRATION_PERCENT в файле docker-compose.yml.
+MOVIES_MIGRATION_PERCENT=100%
+```bash
+➜  ya-practicum-02 git:(cinema) ✗ docker logs cinemaabyss-proxy-service
+2026/02/28 12:55:59 Starting Proxy Service (API Gateway) on port 8000
+2026/02/28 12:55:59 Monolith URL: http://monolith:8080
+2026/02/28 12:55:59 Movies Service URL: http://movies-service:8081
+2026/02/28 12:55:59 Events Service URL: http://events-service:8082
+2026/02/28 12:55:59 Gradual Migration: true
+2026/02/28 12:55:59 Movies Migration Percent: 100%
+2026/02/28 12:56:07 Starting Proxy Service (API Gateway) on port 8000
+2026/02/28 12:56:07 Monolith URL: http://monolith:8080
+2026/02/28 12:56:07 Movies Service URL: http://movies-service:8081
+2026/02/28 12:56:07 Events Service URL: http://events-service:8082
+2026/02/28 12:56:07 Gradual Migration: true
+2026/02/28 12:56:07 Movies Migration Percent: 100%
+2026/02/28 12:56:42 [monolith] GET /health -> http://monolith:8080
+2026/02/28 12:56:42 [movies-service] GET /api/movies -> http://movies-service:8081
+2026/02/28 12:56:43 [movies-service] GET /api/movies -> http://movies-service:8081
+2026/02/28 12:56:43 [movies-service] GET /api/movies -> http://movies-service:8081
+2026/02/28 12:56:44 [movies-service] GET /api/movies -> http://movies-service:8081
+2026/02/28 12:56:44 [movies-service] GET /api/movies -> http://movies-service:8081
+2026/02/28 12:56:45 [movies-service] GET /api/movies -> http://movies-service:8081
+2026/02/28 12:56:46 [movies-service] GET /api/movies -> http://movies-service:8081
+2026/02/28 12:56:46 [movies-service] GET /api/movies -> http://movies-service:8081
+2026/02/28 12:56:47 [movies-service] GET /api/movies -> http://movies-service:8081
+2026/02/28 12:56:47 [movies-service] GET /api/movies -> http://movies-service:8081
+2026/02/28 12:56:48 [monolith] GET /api/users -> http://monolith:8080
+2026/02/28 12:56:48 [monolith] GET /api/payments -> http://monolith:8080
+```
 
 ### 2. Kafka
  Вам как архитектуру нужно также проверить гипотезу насколько просто реализовать применение Kafka в данной архитектуре.

@@ -1,0 +1,16 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+proxy
+
+# Test binary
+*.test
+
+# Output
+*.out
+
+# Go workspace file
+go.work
