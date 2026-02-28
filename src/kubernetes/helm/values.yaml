@@ -139,6 +139,26 @@ kafka:
       partitions: 1
       replicationFactor: 1
 
+# Zookeeper configuration
+zookeeper:
+  enabled: true
+  image:
+    repository: wurstmeister/zookeeper
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicas: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  persistence:
+    enabled: true
+    size: 1Gi
+    accessMode: ReadWriteOnce
+
 # Ingress configuration
 ingress:
   enabled: true
