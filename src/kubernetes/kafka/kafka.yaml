@@ -138,7 +138,7 @@ spec:
             memory: "512Mi"
             cpu: "200m"
           limits:
-            memory: "1Gi"
+            memory: "1536Mi"
             cpu: "1000m"
         env:
         - name: KAFKA_ADVERTISED_LISTENERS
@@ -157,6 +157,8 @@ spec:
           value: "1"
         - name: KAFKA_LOG_DIRS
           value: "/kafka/kafka-logs"
+        - name: KAFKA_HEAP_OPTS
+          value: "-Xmx768M -Xms384M"
         volumeMounts:
         - name: kafka-data
           mountPath: /kafka
