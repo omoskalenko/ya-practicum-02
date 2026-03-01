@@ -80,74 +80,194 @@ helm
 ![helm](./helm-install-result.png)
 
 # Задание 5
-Компания планирует активно развиваться и для повышения надежности, безопасности, реализации сетевых паттернов типа Circuit Breaker и канареечного деплоя вам как архитектору необходимо развернуть istio и настроить circuit breaker для monolith и movies сервисов.
 
 ```bash
+ya-practicum-02 git:(cinema) ✗ helm repo add istio https://istio-release.storage.googleapis.com/charts
+"istio" has been added to your repositories
+➜  ya-practicum-02 git:(cinema) ✗ helm repo update
+Hang tight while we grab the latest from your chart repositories...
+...Successfully got an update from the "istio" chart repository
+Update Complete. ⎈Happy Helming!⎈
+➜  ya-practicum-02 git:(cinema) ✗ helm install istio-base istio/base -n istio-system --set defaultRevision=default --create-namespace
+NAME: istio-base
+LAST DEPLOYED: Sun Mar  1 17:43:25 2026
+NAMESPACE: istio-system
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None
+NOTES:
+Istio base successfully installed!
 
-helm repo add istio https://istio-release.storage.googleapis.com/charts
-helm repo update
+To learn more about the release, try:
+  $ helm status istio-base -n istio-system
+  $ helm get all istio-base -n istio-system
+➜  ya-practicum-02 git:(cinema) ✗ helm install istio-ingressgateway istio/gateway -n istio-system
+NAME: istio-ingressgateway
+LAST DEPLOYED: Sun Mar  1 17:43:32 2026
+NAMESPACE: istio-system
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None
+NOTES:
+"istio-ingressgateway" successfully installed!
 
-helm install istio-base istio/base -n istio-system --set defaultRevision=default --create-namespace
-helm install istio-ingressgateway istio/gateway -n istio-system
-helm install istiod istio/istiod -n istio-system --wait
+To learn more about the release, try:
+  $ helm status istio-ingressgateway -n istio-system
+  $ helm get all istio-ingressgateway -n istio-system
 
-helm install cinemaabyss .\src\kubernetes\helm --namespace cinemaabyss --create-namespace
+Next steps:
+  * Deploy an HTTP Gateway: https://istio.io/latest/docs/tasks/traffic-management/ingress/ingress-control/
+  * Deploy an HTTPS Gateway: https://istio.io/latest/docs/tasks/traffic-management/ingress/secure-ingress/
+➜  ya-practicum-02 git:(cinema) ✗ helm install istiod istio/istiod -n istio-system --wait
+NAME: istiod
+LAST DEPLOYED: Sun Mar  1 17:43:38 2026
+NAMESPACE: istio-system
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None
+NOTES:
+"istiod" successfully installed!
 
-kubectl label namespace cinemaabyss istio-injection=enabled --overwrite
+To learn more about the release, try:
+  $ helm status istiod -n istio-system
+  $ helm get all istiod -n istio-system
 
-kubectl get namespace -L istio-injection
+Next steps:
+  * Deploy a Gateway: https://istio.io/latest/docs/setup/additional-setup/gateway/
+  * Try out our tasks to get started on common configurations:
+    * https://istio.io/latest/docs/tasks/traffic-management
+    * https://istio.io/latest/docs/tasks/security/
+    * https://istio.io/latest/docs/tasks/policy-enforcement/
+  * Review the list of actively supported releases, CVE publications and our hardening guide:
+    * https://istio.io/latest/docs/releases/supported-releases/
+    * https://istio.io/latest/news/security/
+    * https://istio.io/latest/docs/ops/best-practices/security/
 
-kubectl apply -f .\src\kubernetes\circuit-breaker-config.yaml -n cinemaabyss
-
+For further documentation see https://istio.io website
+ya-practicum-02 git:(cinema) ✗ helm install cinemaabyss ./src/kubernetes/helm --namespace cinemaabyss --create-namespace
+NAME: cinemaabyss
+LAST DEPLOYED: Sun Mar  1 17:48:59 2026
+NAMESPACE: cinemaabyss
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None
+➜  ya-practicum-02 git:(cinema) ✗ kubectl label namespace cinemaabyss istio-injection=enabled --overwrite
+namespace/cinemaabyss labeled
+➜  ya-practicum-02 git:(cinema) ✗ kubectl get namespace -L istio-injection
+NAME              STATUS   AGE     ISTIO-INJECTION
+cinemaabyss       Active   14s     enabled
+default           Active   15m     
+ingress-nginx     Active   13m     
+istio-system      Active   5m47s   
+kube-node-lease   Active   15m     
+kube-public       Active   15m     
+kube-system       Active   15m     
+➜  ya-practicum-02 git:(cinema) ✗ kubectl rollout restart deployment monolith -n cinemaabyss
+deployment.apps/monolith restarted
+➜  ya-practicum-02 git:(cinema) ✗ kubectl rollout restart deployment movies-service -n cinemaabyss
+deployment.apps/movies-service restarted
+➜  ya-practicum-02 git:(cinema) ✗ kubectl get pods -n cinemaabyss
+NAME                              READY   STATUS     RESTARTS      AGE
+events-service-56bccb7969-9xc9t   1/1     Running    0             38s
+events-service-56bccb7969-glttb   1/1     Running    0             38s
+kafka-0                           1/1     Running    0             38s
+monolith-6697f78d8-vskfv          0/2     Init:0/1   0             9s
+monolith-94c55c7b7-zrvrx          1/1     Running    2 (35s ago)   38s
+movies-service-57675db7b7-rkjsq   0/2     Init:0/1   0             4s
+movies-service-59767cc4dd-xfbwd   1/1     Running    2 (35s ago)   38s
+postgres-0                        1/1     Running    0             38s
+proxy-service-54999ff94-8k82f     0/1     Running    0             38s
+proxy-service-54999ff94-x29dk     1/1     Running    0             38s
+zookeeper-0                       1/1     Running    0             38s
+➜  ya-practicum-02 git:(cinema) ✗ kubectl get pods -n cinemaabyss
+NAME                              READY   STATUS    RESTARTS      AGE
+events-service-56bccb7969-9xc9t   1/1     Running   0             2m12s
+events-service-56bccb7969-glttb   1/1     Running   0             2m12s
+kafka-0                           1/1     Running   0             2m12s
+monolith-6697f78d8-vskfv          2/2     Running   1 (91s ago)   103s
+movies-service-57675db7b7-rkjsq   2/2     Running   1 (91s ago)   98s
+postgres-0                        1/1     Running   0             2m12s
+proxy-service-54999ff94-8k82f     1/1     Running   0             2m12s
+proxy-service-54999ff94-x29dk     1/1     Running   0             2m12s
+zookeeper-0                       1/1     Running   0             2m12s
+➜  ya-practicum-02 git:(cinema) ✗ 
+ya-practicum-02 git:(cinema) ✗ kubectl apply -f ./src/kubernetes/circuit-breaker-config.yaml -n cinemaabyss
+Warning: outlier detection consecutive errors is deprecated, use consecutiveGatewayErrors or consecutive5xxErrors instead
+destinationrule.networking.istio.io/monolith-circuit-breaker created
+destinationrule.networking.istio.io/movies-service-circuit-breaker created
+➜  ya-practicum-02 git:(cinema) ✗ kubectl get destinationrule -n cinemaabyss
+NAME                             HOST                                           AGE
+monolith-circuit-breaker         monolith.cinemaabyss.svc.cluster.local         7s
+movies-service-circuit-breaker   movies-service.cinemaabyss.svc.cluster.local   7s
+➜  ya-practicum-02 git:(cinema) ✗ kubectl describe destinationrule monolith-circuit-breaker -n cinemaabyss
+Name:         monolith-circuit-breaker
+Namespace:    cinemaabyss
+Labels:       <none>
+Annotations:  <none>
+API Version:  networking.istio.io/v1
+Kind:         DestinationRule
+Metadata:
+  Creation Timestamp:  2026-03-01T14:52:02Z
+  Generation:          1
+  Resource Version:    3534
+  UID:                 b8a13d3c-1903-4226-a760-4c76480cd4b8
+Spec:
+  Host:  monolith.cinemaabyss.svc.cluster.local
+  Traffic Policy:
+    Connection Pool:
+      Http:
+        http1MaxPendingRequests:      50
+        http2MaxRequests:             100
+        Max Requests Per Connection:  10
+      Tcp:
+        Max Connections:  100
+    Outlier Detection:
+      Base Ejection Time:    30s
+      Consecutive Errors:    5
+      Interval:              30s
+      Max Ejection Percent:  50
+      Min Health Percent:    50
+Events:                      <none>
+➜  ya-practicum-02 git:(cinema) ✗ kubectl describe destinationrule movies-service-circuit-breaker -n cinemaabyss
+Name:         movies-service-circuit-breaker
+Namespace:    cinemaabyss
+Labels:       <none>
+Annotations:  <none>
+API Version:  networking.istio.io/v1
+Kind:         DestinationRule
+Metadata:
+  Creation Timestamp:  2026-03-01T14:52:02Z
+  Generation:          1
+  Resource Version:    3535
+  UID:                 572acc88-f370-4379-868b-ce13668fdb9b
+Spec:
+  Host:  movies-service.cinemaabyss.svc.cluster.local
+  Traffic Policy:
+    Connection Pool:
+      Http:
+        http1MaxPendingRequests:      50
+        http2MaxRequests:             100
+        Max Requests Per Connection:  10
+      Tcp:
+        Max Connections:  100
+    Outlier Detection:
+      Base Ejection Time:    30s
+      Consecutive Errors:    3
+      Interval:              20s
+      Max Ejection Percent:  50
+      Min Health Percent:    50
+Events:                      <none>
+➜  ya-practicum-02 git:(cinema) ✗ 
 ```
 
 Тестирование
+[log](./cb-test.log)
 
-# fortio
-```bash
-kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.25/samples/httpbin/sample-client/fortio-deploy.yaml -n cinemaabyss
-```
+![result](./cb-result.png)
 
-# Get the fortio pod name
-```bash
-FORTIO_POD=$(kubectl get pod -n cinemaabyss | grep fortio | awk '{print $1}')
-
-kubectl exec -n cinemaabyss $FORTIO_POD -c fortio -- fortio load -c 50 -qps 0 -n 500 -loglevel Warning http://movies-service:8081/api/movies
-```
-Например,
-
-```bash
-kubectl exec -n cinemaabyss fortio-deploy-b6757cbbb-7c9qg  -c fortio -- fortio load -c 50 -qps 0 -n 500 -loglevel Warning http://movies-service:8081/api/movies
-```
-
-Вывод будет типа такого
-
-```bash
-IP addresses distribution:
-10.106.113.46:8081: 421
-Code 200 : 79 (15.8 %)
-Code 500 : 22 (4.4 %)
-Code 503 : 399 (79.8 %)
-```
-Можно еще проверить статистику
-
-```bash
-kubectl exec -n cinemaabyss fortio-deploy-b6757cbbb-7c9qg -c istio-proxy -- pilot-agent request GET stats | grep movies-service | grep pending
-```
-
-И там смотрим 
-
-```bash
-cluster.outbound|8081||movies-service.cinemaabyss.svc.cluster.local;.upstream_rq_pending_total: 311 - столько раз срабатывал circuit breaker
-You can see 21 for the upstream_rq_pending_overflow value which means 21 calls so far have been flagged for circuit breaking.
-```
-
-Приложите скриншот работы circuit breaker'а
-
-Удаляем все
-```bash
-istioctl uninstall --purge
-kubectl delete namespace istio-system
-kubectl delete all --all -n cinemaabyss
-kubectl delete namespace cinemaabyss
-```
+опустил сервис movies-service
+![result](./cb-503.png)
