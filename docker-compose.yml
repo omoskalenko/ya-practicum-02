@@ -89,7 +89,6 @@ services:
       dockerfile: Dockerfile
     container_name: cinemaabyss-events-service
     depends_on:
-      - postgres
       - kafka
     ports:
       - "8082:8082"
@@ -132,12 +131,12 @@ services:
     environment:
       KAFKA_CLUSTERS_0_NAME: cinemaabyss
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
-      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
     networks:
       - cinemaabyss-network
 
 volumes:
   postgres-data:
+  kafka-data:
 
 networks:
   cinemaabyss-network:

@@ -1,0 +1,100 @@
+@startuml CinemaAbyss To-Be Architecture - C4 Container Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Container Diagram для системы "Кинобездна" (To-Be Architecture)
+
+Person(customer, "Пользователь", "Клиент онлайн-кинотеатра")
+Person(admin, "Администратор", "Управляет контентом и системой")
+
+System_Ext(recommendation_system, "Рекомендательная система", "Внешняя система для персональных рекомендаций")
+System_Ext(payment_gateway, "Платёжный шлюз", "Внешний сервис обработки платежей")
+System_Ext(content_providers, "Контент-провайдеры", "Стриминговые сервисы и открытые источники")
+
+System_Boundary(cinemaabyss, "CinemaAbyss Platform") {
+    
+    Container(mobile_app, "Mobile Application", "iOS/Android", "Предоставляет функционал кинотеатра на мобильных устройствах")
+    Container(smart_tv_app, "Smart TV Application", "tvOS/Android TV", "Предоставляет функционал кинотеатра на смарт ТВ")
+    
+    Container(api_gateway, "API Gateway", "Go + Nginx", "Единая точка входа, маршрутизация запросов, аутентификация, rate limiting")
+    
+    Container(user_service, "User Service", "Go", "Управление пользователями, аутентификация, авторизация, профили")
+    ContainerDb(user_db, "User Database", "PostgreSQL", "Хранит данные пользователей, сессии, права доступа")
+    
+    Container(movies_service, "Movies Service", "Go", "Управление метаданными фильмов, жанрами, актёрами, оценками")
+    ContainerDb(movies_db, "Movies Database", "PostgreSQL", "Хранит метаданные фильмов, жанры, актёры, рейтинги")
+    
+    Container(subscription_service, "Subscription Service", "Go", "Управление подписками, тарифами, доступами к контенту")
+    ContainerDb(subscription_db, "Subscription Database", "PostgreSQL", "Хранит данные о подписках и тарифах")
+    
+    Container(payment_service, "Payment Service", "Go", "Обработка платежей, транзакции, история платежей")
+    ContainerDb(payment_db, "Payment Database", "PostgreSQL", "Хранит транзакции и историю платежей")
+    
+    Container(favorites_service, "Favorites Service", "Go", "Управление избранным, списками просмотра, историей")
+    ContainerDb(favorites_db, "Favorites Database", "PostgreSQL", "Хранит избранное и списки пользователей")
+    
+    Container(discount_service, "Discount Service", "Go", "Управление скидками, промокодами, специальными предложениями")
+    ContainerDb(discount_db, "Discount Database", "PostgreSQL", "Хранит скидки и промокоды")
+    
+    Container(event_bus, "Event Bus", "Apache Kafka", "Асинхронная коммуникация между сервисами, обработка событий")
+    
+    Container(notification_service, "Notification Service", "Go", "Отправка уведомлений пользователям (email, push)")
+    
+    Container(analytics_service, "Analytics Service", "Go", "Сбор и обработка аналитики, метрик просмотров")
+    ContainerDb(analytics_db, "Analytics Database", "PostgreSQL/ClickHouse", "Хранит аналитические данные")
+    
+    Container(cache, "Cache Layer", "Redis", "Кэширование часто запрашиваемых данных")
+}
+
+Rel(customer, web_app, "Использует", "HTTPS")
+Rel(customer, mobile_app, "Использует", "HTTPS")
+Rel(customer, smart_tv_app, "Использует", "HTTPS")
+Rel(admin, web_app, "Управляет", "HTTPS")
+
+Rel(web_app, api_gateway, "Делает API вызовы", "JSON/HTTPS")
+Rel(mobile_app, api_gateway, "Делает API вызовы", "JSON/HTTPS")
+Rel(smart_tv_app, api_gateway, "Делает API вызовы", "JSON/HTTPS")
+
+Rel(api_gateway, user_service, "Маршрутизирует запросы", "gRPC/REST")
+Rel(api_gateway, movies_service, "Маршрутизирует запросы", "gRPC/REST")
+Rel(api_gateway, subscription_service, "Маршрутизирует запросы", "gRPC/REST")
+Rel(api_gateway, payment_service, "Маршрутизирует запросы", "gRPC/REST")
+Rel(api_gateway, favorites_service, "Маршрутизирует запросы", "gRPC/REST")
+Rel(api_gateway, discount_service, "Маршрутизирует запросы", "gRPC/REST")
+
+Rel(api_gateway, cache, "Кэширует ответы", "Redis Protocol")
+
+Rel(user_service, user_db, "Читает/записывает", "SQL")
+Rel(user_service, event_bus, "Публикует события", "Kafka Protocol")
+
+Rel(movies_service, movies_db, "Читает/записывает", "SQL")
+Rel(movies_service, event_bus, "Публикует события", "Kafka Protocol")
+Rel(movies_service, cache, "Кэширует данные", "Redis Protocol")
+
+Rel(subscription_service, subscription_db, "Читает/записывает", "SQL")
+Rel(subscription_service, event_bus, "Публикует события", "Kafka Protocol")
+Rel(subscription_service, user_service, "Проверяет пользователя", "gRPC")
+
+Rel(payment_service, payment_db, "Читает/записывает", "SQL")
+Rel(payment_service, payment_gateway, "Обрабатывает платежи", "HTTPS/REST")
+Rel(payment_service, event_bus, "Публикует события", "Kafka Protocol")
+Rel(payment_service, subscription_service, "Обновляет подписку", "gRPC")
+
+Rel(favorites_service, favorites_db, "Читает/записывает", "SQL")
+Rel(favorites_service, movies_service, "Получает данные о фильмах", "gRPC")
+Rel(favorites_service, event_bus, "Публикует события", "Kafka Protocol")
+
+Rel(discount_service, discount_db, "Читает/записывает", "SQL")
+Rel(discount_service, event_bus, "Публикует события", "Kafka Protocol")
+
+Rel(event_bus, notification_service, "Подписан на события", "Kafka Protocol")
+Rel(event_bus, analytics_service, "Подписан на события", "Kafka Protocol")
+Rel(event_bus, recommendation_system, "Отправляет события", "Kafka Protocol")
+
+Rel(notification_service, user_service, "Получает данные пользователя", "gRPC")
+
+Rel(analytics_service, analytics_db, "Записывает метрики", "SQL")
+
+Rel(movies_service, content_providers, "Получает контент", "REST/HTTPS")
+Rel(movies_service, recommendation_system, "Получает рекомендации", "REST/HTTPS")
+
+@enduml
